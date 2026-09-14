@@ -7,6 +7,7 @@
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
+    "./fs": "./lib/fs-composite.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./daemon/dsh-remote-daemon.cjs": "./daemon/dsh-remote-daemon.cjs",
     "./package.json": "./package.json"

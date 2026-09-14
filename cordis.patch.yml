@@ -1,13 +1,25 @@
 # dsh-remote-workspace bundle patch: mounts the remote-workspace plugin into
 # the host composition of a dsh profile. The plugin registers the `remote_*`
-# tools into the shared `tools` registry, so every session of the profile can
-# drive SSH remote workspaces (connect, exec, fs) through natural language.
+# tools into the shared `tools` registry and the settings-page web surface, so
+# every session of the profile can drive SSH remote workspaces.
+#
+# The composite filesystem row REPLACES the stock sandboxed-local fs for the
+# whole profile: local paths delegate to the same SandboxedFileSystem (sandbox
+# semantics untouched); only `dsh-remote://` targets route to the SSH daemon.
 #
 # Install: `dsh plugin --profile <name> add <this package>` (npm or a local
 # path). The `dsh plugin` command pnpm-installs the package into the profile
 # and reconciles it into the profile's `dsh.profile.bundles` layer list.
+
+# This layer loads after dsh-base: retire the stock sandboxed-local fs row in
+# favor of the composite row below (last write wins per row id).
+- id: fs-sandbox
+  disabled: true
+
 - insert:
     - id: remote-workspace
       # Node-resolvable package name — must stay in sync with package.json
       # `name`.
       name: dsh-remote-workspace
+    - id: remote-workspace-fs
+      name: 'dsh-remote-workspace/fs'

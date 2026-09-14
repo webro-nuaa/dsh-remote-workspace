@@ -89,16 +89,21 @@ function fakeSpawn(spec) {
 // ---- stub cordis context ----
 const effects = [];
 const registeredTools = new Map();
+const provided = new Map();
 const serviceListeners = new Map();
 const ctx = {
+  reflect: { provide() {} },
+  sandboxPolicy: { defaultMode: 'workspace-write', resolve: () => ({ mode: 'danger-full-access', workspaceRoot: process.cwd() }) },
   subprocess: { spawn: fakeSpawn, resolveExecutable: async (name) => name },
   tools: { register: (def) => { registeredTools.set(def.name, def); return () => registeredTools.delete(def.name); } },
+  provide(name, value) { provided.set(name, value); },
   on(name, fn) {
     if (!serviceListeners.has(name)) serviceListeners.set(name, []);
     serviceListeners.get(name).push(fn);
     return () => { serviceListeners.set(name, serviceListeners.get(name).filter((f) => f !== fn)); };
   },
   get(name) {
+    if (provided.has(name)) return provided.get(name);
     if (name === 'webServer') return fakeWebServer;
     if (name === 'connection') return { requestRejection: () => undefined }; // authenticated gate: pass
     return undefined;
