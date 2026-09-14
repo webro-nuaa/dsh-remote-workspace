@@ -24,5 +24,11 @@ check('patch references package', patch.includes('name: dsh-remote-workspace'), 
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 check('bundle patch declared', pkg.dsh?.bundle?.patch === './cordis.patch.yml', JSON.stringify(pkg.dsh));
 check('main is lib/index.js', pkg.main === 'lib/index.js', pkg.main);
+check('client entry declared', pkg.exports['./client'] === './lib/client.js' && pkg.dsh?.client?.platform === 'web', JSON.stringify(pkg.exports['./client']));
+
+const client = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8');
+check('client module loader wrapper', client.includes('window.__ModuleLoader__.load') && client.includes("id: \"dsh-remote-workspace\"") && client.includes('settings.section'), 'wrapper + slot');
+const hostRoutes = await readFile(new URL('../lib/index.js', import.meta.url), 'utf8');
+check('host web routes', hostRoutes.includes('/plugins/dsh-remote-workspace/status') && hostRoutes.includes('authenticatedWebRoutes'), 'routes + auth fence');
 
 process.exit(failures.length ? 1 : 0);

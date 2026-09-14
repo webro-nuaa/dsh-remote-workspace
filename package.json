@@ -6,6 +6,7 @@
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
+    "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./daemon/dsh-remote-daemon.js": "./daemon/dsh-remote-daemon.js",
     "./package.json": "./package.json"
@@ -43,6 +44,10 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
     }
   },
   "scripts": {

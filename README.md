@@ -43,6 +43,16 @@ fs / subprocess / shell / terminals 能力服务（每进程单实现坑位）
 映射到 DSH 既有 `approval` 服务（`setPolicy`），按工作区维度设置；远端不假装本地
 Windows ACL 沙箱存在，以 approval 策略为安全边界。
 
+### GUI（Client half）
+
+- 设置页「远程工作区」（`settings.section`）：新增/保存连接配置（名称/主机/端口/用户/认证方式）、
+  一键连接/断开、活动连接状态（daemon 版本/平台）；已保存配置持久化于
+  `~/.dsh/remote-workspace/connections.json`，**密码永不落盘**（连接时输入，仅驻留进程内存）
+- Host API：`/plugins/dsh-remote-workspace/{status,profiles,connect,disconnect}`，走页面 Connection
+  认证围栏（未认证一律 503/401/403）
+- 尚未做：工作区选择器里的「远程连接」入口（需替换 hero 单座，shadows-shipped-ui，谨慎评估）、
+  远端文件树/diff（依赖复合 fs，见下）
+
 ### 打包与分发
 
 - 本仓库本身即一个 DSH Profile Bundle 包（`dsh.bundle.patch: ./cordis.patch.yml`）
