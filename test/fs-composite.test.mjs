@@ -1,6 +1,6 @@
 /**
  * Composite filesystem routing test: local paths delegate to the real sandboxed
- * local backend (constructed with a stub cordis context), `dsh-remote://`
+ * local backend (constructed with a stub cordis context), `/dsh-remote/...`
  * targets route to a fake daemon RPC. Verifies shapes match the dsh-fs contract.
  *
  * Run: node test/fs-composite.test.mjs
@@ -8,7 +8,7 @@
 import { mkdtempSync, rmSync, writeFileSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import RemoteWorkspaceFileSystem, { REMOTE_SCHEME } from '../lib/fs-composite.js';
+import RemoteWorkspaceFileSystem, { REMOTE_SCHEME, REMOTE_KEY_PREFIX } from '../lib/fs-composite.js';
 import { FsError } from '@deepseek-ai/dsh-fs';
 
 const failures = [];
@@ -102,7 +102,7 @@ const fsInstance = new RemoteWorkspaceFileSystem(fakeCtx, { cwd: localDir, diffB
 
 // ---- local delegation ----
 const lt = await fsInstance.resolve('local.txt');
-check('local resolve keeps realpath key', typeof lt.targetKey === 'string' && !lt.targetKey.startsWith(REMOTE_SCHEME) && lt.targetKey.includes('local.txt'), JSON.stringify(lt));
+check('local resolve keeps realpath key', typeof lt.targetKey === 'string' && !lt.targetKey.startsWith(REMOTE_KEY_PREFIX) && lt.targetKey.includes('local.txt'), JSON.stringify(lt));
 const lr = await fsInstance.readText(lt);
 check('local readText delegates', lr === 'local content', JSON.stringify(lr));
 const lstat1 = await fsInstance.lstat('local.txt');
@@ -110,28 +110,30 @@ check('local lstat delegates', lstat1 && lstat1.type === 'file', JSON.stringify(
 
 // ---- remote resolve ----
 const rt = await fsInstance.resolve('dsh-remote://test/data2/proj');
-check('remote resolve key', rt.targetKey === 'dsh-remote://test/data2/proj' && rt.displayPath === 'test:/data2/proj', JSON.stringify(rt));
+check('remote resolve key (POSIX form)', rt.targetKey === '/dsh-remote/test/data2/proj' && rt.displayPath === 'test:/data2/proj', JSON.stringify(rt));
+const rt2 = await fsInstance.resolve('/dsh-remote/test/data2/proj');
+check('remote resolve accepts POSIX key input', rt2.targetKey === '/dsh-remote/test/data2/proj', JSON.stringify(rt2));
 
-const bad = await fsInstance.resolve('dsh-remote://nope/data2/proj').catch((e) => e);
+const bad = await fsInstance.resolve('/dsh-remote/nope/data2/proj').catch((e) => e);
 check('remote resolve inactive connection', bad instanceof FsError && bad.code === 'FS_NOT_FOUND', JSON.stringify({ code: bad.code, message: bad.message }));
 
 // ---- remote stat / listDir ----
-const fileTarget = await fsInstance.resolve('dsh-remote://test/data2/proj/README.md');
+const fileTarget = await fsInstance.resolve('/dsh-remote/test/data2/proj/README.md');
 const st = await fsInstance.stat(fileTarget);
 check('remote stat shape', st && st.type === 'file' && st.size === 12 && String(st.version).startsWith('rw:'), JSON.stringify(st));
-const missing = await fsInstance.stat(await fsInstance.resolve('dsh-remote://test/data2/proj/nope.txt'));
+const missing = await fsInstance.stat(await fsInstance.resolve('/dsh-remote/test/data2/proj/nope.txt'));
 check('remote stat missing -> undefined', missing === undefined, JSON.stringify(missing));
 
-const dirTarget = await fsInstance.resolve('dsh-remote://test/data2/proj');
+const dirTarget = await fsInstance.resolve('/dsh-remote/test/data2/proj');
 const listing = await fsInstance.listDir(dirTarget);
 check('remote listDir names+order (localeCompare parity with local)', listing.map((e) => e.name).join(',') === 'bin.dat,README.md,src', JSON.stringify(listing.map((e) => e.name)));
-check('remote listDir child keys', listing.every((e) => e.target.targetKey.startsWith('dsh-remote://test/data2/proj/')), JSON.stringify(listing[0]));
+check('remote listDir child keys', listing.every((e) => e.target.targetKey.startsWith('/dsh-remote/test/data2/proj/')), JSON.stringify(listing[0]));
 check('remote listDir types', listing.find((e) => e.name === 'src').type === 'directory' && listing.find((e) => e.name === 'README.md').type === 'file', JSON.stringify(listing.map((e) => [e.name, e.type])));
 
 // ---- remote reads ----
 const text = await fsInstance.readText(fileTarget);
 check('remote readText', text === 'hello remote', JSON.stringify(text));
-await fsInstance.readText(await fsInstance.resolve('dsh-remote://test/data2/proj/bin.dat')).then(
+await fsInstance.readText(await fsInstance.resolve('/dsh-remote/test/data2/proj/bin.dat')).then(
   () => check('remote binary rejected', false, 'no throw'),
   (e) => check('remote binary rejected', e instanceof FsError && e.code === 'FS_NOT_TEXT', e.message),
 );
@@ -148,7 +150,7 @@ check('remote contains inside', fsInstance.contains(dirTarget, fileTarget) === t
 check('remote contains mixed false', fsInstance.contains(dirTarget, lt) === false);
 
 // ---- remote writes ----
-const newFile = await fsInstance.resolve('dsh-remote://test/data2/proj/new.txt');
+const newFile = await fsInstance.resolve('/dsh-remote/test/data2/proj/new.txt');
 const w1 = await fsInstance.writeText(newFile, 'written remotely\nline2\n');
 check('remote writeText create', w1.operation === 'create' && String(w1.version).startsWith('rw:') && w1.after === 'written remotely\nline2\n', JSON.stringify(w1));
 check('remote write visible in fake fs', remoteFiles.get('/data2/proj/new.txt').content.toString('utf8') === 'written remotely\nline2\n');
@@ -157,7 +159,7 @@ const w2 = await fsInstance.writeText(newFile, 'x', { kind: 'replaceIfVersion', 
 check('remote write stale guard', w2 instanceof FsError && w2.code === 'FS_STALE_VERSION', JSON.stringify({ code: w2.code }));
 
 // ---- remote edits (CRLF normalize + restore) ----
-const mainTarget = await fsInstance.resolve('dsh-remote://test/data2/proj/src/main.js');
+const mainTarget = await fsInstance.resolve('/dsh-remote/test/data2/proj/src/main.js');
 const e1 = await fsInstance.editText(mainTarget, { oldString: 'const a = 1;', newString: 'const a = 42;' });
 check('remote edit success', e1.after.includes('const a = 42;') && e1.before.includes('const a = 1;'), JSON.stringify(e1));
 check('remote edit preserves CRLF', remoteFiles.get('/data2/proj/src/main.js').content.toString('utf8').includes('\r\n'), JSON.stringify(remoteFiles.get('/data2/proj/src/main.js').content.toString('utf8')));
@@ -172,13 +174,24 @@ check('local writeText delegates', lw.operation === 'update' && lw.after === 'lo
 
 // ---- anchor mapping: session cwd = anchor dir -> remote rewrite ----
 const anchoredTarget = await fsInstance.resolve('proj/README.md', { cwd: anchorTmpDir });
-check('anchor cwd rewrites to remote key', anchoredTarget.targetKey === 'dsh-remote://test/data2/proj/README.md', JSON.stringify(anchoredTarget));
+check('anchor cwd rewrites to remote key', anchoredTarget.targetKey === '/dsh-remote/test/data2/proj/README.md', JSON.stringify(anchoredTarget));
 const anchoredAbs = await fsInstance.resolve(join(anchorTmpDir, 'proj', 'src', 'main.js'), {});
-check('anchor absolute path rewrites', anchoredAbs.targetKey === 'dsh-remote://test/data2/proj/src/main.js', JSON.stringify(anchoredAbs));
+check('anchor absolute path rewrites', anchoredAbs.targetKey === '/dsh-remote/test/data2/proj/src/main.js', JSON.stringify(anchoredAbs));
 const anchorRootItself = await fsInstance.resolve('.', { cwd: anchorTmpDir });
-check('anchor root maps to remote root', anchorRootItself.targetKey === 'dsh-remote://test/data2', JSON.stringify(anchorRootItself));
+check('anchor root maps to remote root', anchorRootItself.targetKey === '/dsh-remote/test/data2', JSON.stringify(anchorRootItself));
 const outside = await fsInstance.resolve('local.txt');
-check('non-anchored path stays local', !outside.targetKey.startsWith(REMOTE_SCHEME), JSON.stringify(outside));
+check('non-anchored path stays local', !outside.targetKey.startsWith(REMOTE_KEY_PREFIX), JSON.stringify(outside));
+
+// ---- fileUrl identity contract (workspacePathOf compatibility) ----
+const rootUrl = fsInstance.fileUrl(dirTarget);
+const childUrl = fsInstance.fileUrl(fileTarget);
+function workspacePathOf(rootUrl, targetUrl) {
+  const root = new URL(rootUrl).pathname.replace(/\/+$/, "");
+  const target = new URL(targetUrl).pathname;
+  if (target === root) return "";
+  return target.slice(root.length + 1).split("/").map(decodeURIComponent).join("/");
+}
+check('fileUrl parses and derives relative path', workspacePathOf(rootUrl, childUrl) === 'README.md', JSON.stringify({ rootUrl, childUrl, derived: workspacePathOf(rootUrl, childUrl) }));
 
 rmSync(localDir, { recursive: true, force: true });
 rmSync(anchorTmpDir, { recursive: true, force: true });
