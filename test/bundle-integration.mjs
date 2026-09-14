@@ -89,9 +89,15 @@ function fakeSpawn(spec) {
 // ---- stub cordis context ----
 const effects = [];
 const registeredTools = new Map();
+const serviceListeners = new Map();
 const ctx = {
   subprocess: { spawn: fakeSpawn, resolveExecutable: async (name) => name },
   tools: { register: (def) => { registeredTools.set(def.name, def); return () => registeredTools.delete(def.name); } },
+  on(name, fn) {
+    if (!serviceListeners.has(name)) serviceListeners.set(name, []);
+    serviceListeners.get(name).push(fn);
+    return () => { serviceListeners.set(name, serviceListeners.get(name).filter((f) => f !== fn)); };
+  },
   get(name) {
     if (name === 'webServer') return fakeWebServer;
     if (name === 'connection') return { requestRejection: () => undefined }; // authenticated gate: pass
@@ -106,7 +112,7 @@ const mod = await import(new URL('../lib/index.js', import.meta.url).href);
 check('apply is a function', typeof mod.apply === 'function');
 mod.apply(ctx, {});
 
-check('five tools registered', ['remote_connect', 'remote_disconnect', 'remote_status', 'remote_exec', 'remote_fs'].every((n) => registeredTools.has(n)), [...registeredTools.keys()].join(','));
+check('six tools registered', ['remote_connect', 'remote_disconnect', 'remote_status', 'remote_exec', 'remote_fs', 'remote_diag'].every((n) => registeredTools.has(n)), [...registeredTools.keys()].join(','));
 check('web routes registered', routes.has('/plugins/dsh-remote-workspace/status') && routes.has('/plugins/dsh-remote-workspace/profiles') && routes.has('/plugins/dsh-remote-workspace/connect') && routes.has('/plugins/dsh-remote-workspace/disconnect'), [...routes.keys()].join(','));
 
 // ---- tools: direct transport end-to-end ----
