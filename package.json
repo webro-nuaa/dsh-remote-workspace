@@ -8,7 +8,7 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./daemon/dsh-remote-daemon.js": "./daemon/dsh-remote-daemon.js",
+    "./daemon/dsh-remote-daemon.cjs": "./daemon/dsh-remote-daemon.cjs",
     "./package.json": "./package.json"
   },
   "files": [
@@ -51,7 +51,7 @@
     }
   },
   "scripts": {
-    "test": "node test/smoke.js",
+    "test": "node test/smoke.cjs",
     "verify:exports": "node scripts/verify-exports.mjs"
   },
   "license": "MIT",

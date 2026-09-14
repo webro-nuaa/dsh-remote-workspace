@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const daemonPath = path.join(__dirname, '..', 'daemon', 'dsh-remote-daemon.js');
+const daemonPath = path.join(__dirname, '..', 'daemon', 'dsh-remote-daemon.cjs');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-rw-test-'));
 
 const child = spawn(process.execPath, [daemonPath], { stdio: ['pipe', 'pipe', 'pipe'] });

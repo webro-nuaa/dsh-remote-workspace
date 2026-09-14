@@ -15,7 +15,7 @@ check('export name', mod.name === 'remote-workspace', String(mod.name));
 check('export inject', Array.isArray(mod.inject) && mod.inject.includes('tools') && mod.inject.includes('subprocess'), JSON.stringify(mod.inject));
 check('export apply', typeof mod.apply === 'function', typeof mod.apply);
 
-const daemon = await readFile(new URL('../daemon/dsh-remote-daemon.js', import.meta.url), 'utf8');
+const daemon = await readFile(new URL('../daemon/dsh-remote-daemon.cjs', import.meta.url), 'utf8');
 check('bundled daemon readable', daemon.includes("const VERSION = '1.0.0'"), 'version marker');
 
 const patch = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8');
