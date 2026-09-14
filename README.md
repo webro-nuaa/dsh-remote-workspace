@@ -45,17 +45,24 @@ Windows ACL 沙箱存在，以 approval 策略为安全边界。
 
 ### 打包与分发
 
-- 最终形态：一个 Profile Bundle（npm 包），往 Profile 组合挂行
-- 可选提供一个 `remote` 示例 Profile
+- 本仓库本身即一个 DSH Profile Bundle 包（`dsh.bundle.patch: ./cordis.patch.yml`）
+- Host 插件：`lib/index.js`（ESM，`name`/`inject`/`apply` 约定），工具经 `tools.register(defineTool(...))` 注册
+- 远端 daemon 随包分发（`daemon/dsh-remote-daemon.js`），插件用 `import.meta.url` 定位自己包内的 daemon
+- 安装（Profile 级）：`dsh plugin --profile <name> add dsh-remote-workspace`（npm 或本地路径）；
+  桌面版暂无该子命令时可手动把包加入 Profile 的 `package.json` 依赖与 `dsh.profile.bundles` 列表
+- 本地开发：`node_modules/@deepseek-ai` junction 指向 DSH 运行时包目录；`pnpm verify:exports` 自检
 
 ## 路线图
 
-- [ ] P0 原型（动态 Cordis 插件）：SSH 传输 + 认证（系统 ssh，支持 key / SSH_ASKPASS 密码）
-- [ ] P0 远端 daemon：NDJSON 协议（ping / fs.* / exec.start / exec.read / exec.kill）
-- [ ] P1 复合 fs / subprocess 实现 + 远程工作区注册表
-- [ ] P1 终端（PTY over ssh）与 jobs 贯通
-- [ ] P2 权限模式按工作区接入 approval 服务
-- [ ] P2 Bundle 化 + 示例 Profile + 文件树/diff 端到端验证
+- [x] P0 原型（动态 Cordis 插件）：SSH 传输 + 认证（系统 ssh，支持 key / SSH_ASKPASS 密码）
+- [x] P0 远端 daemon：NDJSON 协议（ping / fs.* / exec.start / exec.read / exec.kill），15/15 冒烟测试
+- [x] P0 Host 插件端到端（direct 调试通道）：连接引导 / RPC / remote_exec / remote_fs 全链路
+- [x] P0 Bundle 化：`lib/index.js` + `cordis.patch.yml` + 随包 daemon，导出契约自检通过
+- [ ] P1 SSH 传输真机验证（探测→node 检查→版本比对→上传引导→建通道，代码就绪待靶子）
+- [ ] P1 复合 fs / subprocess 实现 + 远程工作区注册表（同 Profile 本地/远程并存）
+- [ ] P1 终端（PTY over ssh）与 jobs 贯通、fs.watch 事件流
+- [ ] P2 权限模式按工作区接入 approval 服务（对齐 ZCode 四档）
+- [ ] P2 Profile 实装验证（文件树/diff 端到端）+ 发 npm
 
 ## 目标环境
 

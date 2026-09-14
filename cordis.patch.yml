@@ -1,0 +1,13 @@
+# dsh-remote-workspace bundle patch: mounts the remote-workspace plugin into
+# the host composition of a dsh profile. The plugin registers the `remote_*`
+# tools into the shared `tools` registry, so every session of the profile can
+# drive SSH remote workspaces (connect, exec, fs) through natural language.
+#
+# Install: `dsh plugin --profile <name> add <this package>` (npm or a local
+# path). The `dsh plugin` command pnpm-installs the package into the profile
+# and reconciles it into the profile's `dsh.profile.bundles` layer list.
+- insert:
+    - id: remote-workspace
+      # Node-resolvable package name — must stay in sync with package.json
+      # `name`.
+      name: dsh-remote-workspace

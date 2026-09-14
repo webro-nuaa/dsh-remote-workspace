@@ -1,0 +1,57 @@
+{
+  "name": "dsh-remote-workspace",
+  "version": "0.1.0",
+  "description": "ZCode-style remote workspace for DeepSeek Harness: SSH-backed execution backend (fs/subprocess via a remote stdio daemon) with remote_connect / remote_exec / remote_fs tools",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./daemon/dsh-remote-daemon.js": "./daemon/dsh-remote-daemon.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "daemon",
+    "docs",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "remote-workspace",
+    "ssh",
+    "remote-development"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node test/smoke.js",
+    "verify:exports": "node scripts/verify-exports.mjs"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webro-nuaa/dsh-remote-workspace.git"
+  }
+}
