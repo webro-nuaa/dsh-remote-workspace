@@ -8,6 +8,7 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./fs": "./lib/fs-composite.js",
+    "./picker-native": "./lib/picker-native.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./daemon/dsh-remote-daemon.cjs": "./daemon/dsh-remote-daemon.cjs",
     "./package.json": "./package.json"
@@ -48,7 +49,7 @@
     },
     "client": {
       "platform": "web",
-      "inject": []
+      "inject": ["slots", "uiWorkspace"]
     }
   },
   "scripts": {

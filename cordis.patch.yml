@@ -16,6 +16,12 @@
 - id: fs-sandbox
   disabled: true
 
+# Pin the directory-picker interaction to native. The stock adaptive row
+# downgrades to `browse` on non-loopback binds (LAN access), which breaks the
+# workspace picker's native dialog on this desktop-first deployment.
+- id: directory-picker
+  disabled: true
+
 - insert:
     - id: remote-workspace
       # Node-resolvable package name — must stay in sync with package.json
@@ -23,3 +29,5 @@
       name: dsh-remote-workspace
     - id: remote-workspace-fs
       name: 'dsh-remote-workspace/fs'
+    - id: remote-workspace-picker
+      name: 'dsh-remote-workspace/picker-native'
